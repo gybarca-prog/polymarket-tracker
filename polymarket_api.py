@@ -41,16 +41,47 @@ def _get(base, path, params=None, timeout=20):
 # ============================================================
 
 def fetch_trades(limit=500, offset=0):
-    """Recent trades across Polymarket."""
+    """
+    Fetch recent Polymarket trades.
 
-    return _get(
-        DATA_BASE,
-        "/trades",
-        {
-            "limit": limit,
-            "offset": offset
-        }
-    )
+    Polymarket is queried in pages of up to 500 trades.
+    This allows the tracker to inspect more than 500 trades
+    without relying on a single oversized API request.
+    """
+
+    if limit <= 0:
+        return []
+
+    page_size = 500
+    all_trades = []
+
+    current_offset = offset
+
+    while len(all_trades) < limit:
+
+        remaining = limit - len(all_trades)
+        current_limit = min(page_size, remaining)
+
+        page = _get(
+            DATA_BASE,
+            "/trades",
+            {
+                "limit": current_limit,
+                "offset": current_offset
+            }
+        )
+
+        if not isinstance(page, list) or not page:
+            break
+
+        all_trades.extend(page)
+
+        if len(page) < current_limit:
+            break
+
+        current_offset += len(page)
+
+    return all_trades[:limit]
 
 
 def fetch_positions(wallet, limit=200):
@@ -190,9 +221,7 @@ def _keyword_match(text):
 
 
 def fetch_market_by_condition(condition_id):
-    """
-    Find a market from its conditionId.
-    """
+    """Find a market from its conditionId."""
 
     if not condition_id:
         return None
@@ -251,21 +280,17 @@ def market_is_tennis_or_esports(market):
     if not market:
         return False
 
-    # First check the normal market fields.
     text = _market_text(market)
 
     if _keyword_match(text):
         return True
 
-    # Then check explicit tags.
     market_id = (
         market.get("id")
         or market.get("market_id")
     )
 
-    tags = fetch_market_tags(
-        market_id
-    )
+    tags = fetch_market_tags(market_id)
 
     for tag in tags:
 
@@ -308,36 +333,26 @@ def enrich_trades_with_market_data(trades):
             or trade.get("condition_id")
         )
 
-        # Without a market ID we cannot safely classify it.
         if not condition_id:
-
             trade["_sport_allowed"] = False
-
             continue
 
         if condition_id not in cache:
-
             cache[condition_id] = (
                 fetch_market_by_condition(
                     condition_id
                 )
             )
 
-        market = cache[
-            condition_id
-        ]
+        market = cache[condition_id]
 
         if not market:
-
             trade["_sport_allowed"] = False
-
             continue
 
         trade["_market"] = market
 
-        # Use Gamma's title if Data API has no title.
         if not trade.get("title"):
-
             trade["title"] = (
                 market.get("question")
                 or market.get("title")
