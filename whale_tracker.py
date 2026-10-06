@@ -1,10 +1,10 @@
+```python
 import argparse
 import json
 import os
 import sys
 import urllib.parse
 import urllib.request
-from datetime import datetime, timezone
 
 from polymarket_api import fetch_trades, enrich_trades_with_market_data
 
@@ -138,25 +138,41 @@ def is_allowed_sport(trade):
         "rocket league",
     ]
 
-    return any(word in text for word in tennis_words + esports_words)
+    return any(
+        word in text
+        for word in tennis_words + esports_words
+    )
 
 
-def poll(min_usd=10000, lookback=500):
-    print(f"Fetching latest trades (limit={lookback})...")
-    trades = fetch_trades(limit=lookback)
+def poll(min_usd=10000, lookback=5000):
+    print(
+        f"Fetching latest trades (limit={lookback})..."
+    )
+
+    trades = fetch_trades(
+        limit=lookback
+    )
 
     if not trades:
         print("No trades returned.")
         return 0
 
-    print(f"Received {len(trades)} trades.")
+    print(
+        f"Received {len(trades)} trades."
+    )
 
-    print("Enriching trades with market information...")
-    trades = enrich_trades_with_market_data(trades)
+    print(
+        "Enriching trades with market information..."
+    )
+
+    trades = enrich_trades_with_market_data(
+        trades
+    )
 
     qualifying = []
 
     for trade in trades:
+
         value = trade_usd(trade)
 
         if value < min_usd:
@@ -165,7 +181,9 @@ def poll(min_usd=10000, lookback=500):
         if not is_allowed_sport(trade):
             continue
 
-        qualifying.append((trade, value))
+        qualifying.append(
+            (trade, value)
+        )
 
     print(
         f"Found {len(qualifying)} qualifying trades "
@@ -173,56 +191,88 @@ def poll(min_usd=10000, lookback=500):
     )
 
     for trade, value in qualifying:
-        message = format_trade(trade, value)
+
+        message = format_trade(
+            trade,
+            value
+        )
 
         print("")
         print(message)
         print("")
 
         try:
-            telegram_send(message)
-            print("Telegram notification sent.")
+
+            telegram_send(
+                message
+            )
+
+            print(
+                "Telegram notification sent."
+            )
+
         except Exception as exc:
-            print(f"Telegram notification failed: {exc}", file=sys.stderr)
+
+            print(
+                f"Telegram notification failed: {exc}",
+                file=sys.stderr
+            )
+
             raise
 
     return len(qualifying)
 
 
 def main():
+
     parser = argparse.ArgumentParser(
-        description="Polymarket tennis/esports large trade tracker"
+        description=(
+            "Polymarket tennis/esports "
+            "large trade tracker"
+        )
     )
 
-    subparsers = parser.add_subparsers(dest="command", required=True)
+    subparsers = parser.add_subparsers(
+        dest="command",
+        required=True
+    )
 
     poll_parser = subparsers.add_parser(
         "poll",
-        help="Check recent trades and send qualifying trades to Telegram",
+        help=(
+            "Check recent trades and send "
+            "qualifying trades to Telegram"
+        )
     )
 
     poll_parser.add_argument(
         "--min-usd",
         type=float,
         default=10000,
-        help="Minimum trade value in USD",
+        help=(
+            "Minimum trade value in USD"
+        )
     )
 
     poll_parser.add_argument(
         "--lookback",
         type=int,
-        default=500,
-        help="Number of recent trades to inspect",
+        default=5000,
+        help=(
+            "Number of recent trades to inspect"
+        )
     )
 
     args = parser.parse_args()
 
     if args.command == "poll":
+
         poll(
             min_usd=args.min_usd,
-            lookback=args.lookback,
+            lookback=args.lookback
         )
 
 
 if __name__ == "__main__":
     main()
+```
