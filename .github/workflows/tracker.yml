@@ -8,7 +8,7 @@ on:
     inputs:
       min_usd:
         description: "Minimal USD buat dianggap whale"
-        default: "5000"
+        default: "10000"
 
 permissions:
   contents: read
@@ -43,8 +43,7 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: |
           python3 whale_tracker.py poll \
-            --min-usd "${{ github.event.inputs.min_usd || '5000' }}" \
-            --smart --min-pnl 5000 --min-winrate 0.55 \
+            --min-usd "${{ github.event.inputs.min_usd || '10000' }}" \
             --spike-usd 25000 --spike-window 30 \
-            --consensus-wallets 3 --consensus-window 60 --consensus-min-usd 1000
+           
 
