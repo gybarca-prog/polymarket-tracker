@@ -75,11 +75,11 @@ def format_trade(trade, value):
     tx = trade.get("transactionHash") or ""
 
     lines = [
-        "🐋 POLYMARKET LARGE TRADE",
+        "🐋 POLYMARKET LARGE BUY",
         "",
         f"🎾🎮 Market: {title}",
         f"💰 Value: {format_usd(value)}",
-        f"📈 Side: {side or 'N/A'}",
+        f"📈 Side: {side}",
         f"💵 Price: {price}",
         f"📦 Size: {size}",
         f"👛 Wallet: {wallet}",
@@ -113,6 +113,8 @@ def is_allowed_sport(trade):
         "tennis",
         "atp",
         "wta",
+        "itf",
+        "challenger",
         "us open",
         "australian open",
         "french open",
@@ -160,17 +162,36 @@ def poll(min_usd=10000, lookback=2500):
         f"Received {len(trades)} trades."
     )
 
+    # Csak BUY trade-ek maradnak.
+    buy_trades = []
+
+    for trade in trades:
+        side = str(trade.get("side") or "").upper()
+
+        if side != "BUY":
+            continue
+
+        buy_trades.append(trade)
+
     print(
-        "Enriching trades with market information..."
+        f"Found {len(buy_trades)} BUY trades."
     )
 
-    trades = enrich_trades_with_market_data(
-        trades
+    if not buy_trades:
+        print("No BUY trades found.")
+        return 0
+
+    print(
+        "Enriching BUY trades with market information..."
+    )
+
+    buy_trades = enrich_trades_with_market_data(
+        buy_trades
     )
 
     qualifying = []
 
-    for trade in trades:
+    for trade in buy_trades:
 
         value = trade_usd(trade)
 
@@ -185,7 +206,7 @@ def poll(min_usd=10000, lookback=2500):
         )
 
     print(
-        f"Found {len(qualifying)} qualifying trades "
+        f"Found {len(qualifying)} qualifying BUY trades "
         f"(>= ${min_usd:,.2f}, tennis/esports)."
     )
 
@@ -227,7 +248,7 @@ def main():
     parser = argparse.ArgumentParser(
         description=(
             "Polymarket tennis/esports "
-            "large trade tracker"
+            "large BUY trade tracker"
         )
     )
 
@@ -239,7 +260,7 @@ def main():
     poll_parser = subparsers.add_parser(
         "poll",
         help=(
-            "Check recent trades and send "
+            "Check recent BUY trades and send "
             "qualifying trades to Telegram"
         )
     )
