@@ -143,7 +143,7 @@ def is_allowed_sport(trade):
     )
 
 
-def poll(min_usd=10000, lookback=5000):
+def poll(min_usd=10000, lookback=2500):
     print(
         f"Fetching latest trades (limit={lookback})..."
     )
@@ -256,7 +256,7 @@ def main():
     poll_parser.add_argument(
         "--lookback",
         type=int,
-        default=5000,
+        default=2500,
         help=(
             "Number of recent trades to inspect"
         )
